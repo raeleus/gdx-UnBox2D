@@ -192,6 +192,9 @@ public class UnBox<TPhysicsWorld extends PhysicsWorld<?, ?, ?>> {
             physicsWorld.step(timeStep);
             accumulator -= timeStep;
         }
+
+        if (options.isInterpolateMovement())
+            physicsWorld.interpolateMovement(accumulator);
     }
 
     private void updateFixedObjects() {
@@ -315,7 +318,7 @@ public class UnBox<TPhysicsWorld extends PhysicsWorld<?, ?, ?>> {
 
             var behaviours = gameObjects.get(gameObject);
             for (int j = 0; j < behaviours.size; j++)
-                behavioursToDestroy.add(behaviours.get(j));
+                destroy(behaviours.get(j));
 
             gameObject.setState(GameObjectState.DESTROYED);
 
@@ -343,6 +346,9 @@ public class UnBox<TPhysicsWorld extends PhysicsWorld<?, ?, ?>> {
      * @param behaviour The behaviour instance to remove.
      */
     public void destroy(Behaviour behaviour) {
+        if (behaviour.getState() == BehaviourState.DESTROYING || behaviour.getState() == BehaviourState.DESTROYED)
+            return;
+
         behaviour.setState(BehaviourState.DESTROYING);
 
         behavioursToDestroy.add(behaviour);
@@ -355,12 +361,14 @@ public class UnBox<TPhysicsWorld extends PhysicsWorld<?, ?, ?>> {
      * @param go The behaviour instance to remove.
      */
     public void destroy(GameObject go) {
+        if (go.getState() == GameObjectState.DESTROYING || go.getState() == GameObjectState.DESTROYED)
+            return;
+
         go.setState(GameObjectState.DESTROYING);
 
         var behaviours = gameObjects.get(go);
-        for (int i = 0; i < behaviours.size; i++) {
-            behaviours.get(i).setState(BehaviourState.DESTROYING);
-        }
+        for (int i = 0; i < behaviours.size; i++)
+            destroy(behaviours.get(i));
 
         gameObjectsToDestroy.add(go);
     }
